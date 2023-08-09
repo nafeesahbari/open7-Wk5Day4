@@ -1,48 +1,33 @@
 const { db } = require("../db/connection.js");
-const Pokemon = require("./model");
+const { Pokemon, Trainer, Badge } = require("./models")
 
 async function main() {
-  await db.sync({ force: true });
+  const trainers = await Trainer.findAll();
+  const pokemon = await Pokemon.findAll();
+  const badge = await Badge.findAll();
 
-  //   CREATE
-  const Pikachu = await Pokemon.create({
-    name: "Pikachu",
-    type: "Electric",
-    weight: 6,
+  console.log(trainers[0]);
+
+  await trainers[0].addPokemon(pokemon[0]);
+  await trainers[0].addPokemon([pokemon[1], pokemon[2]]);
+
+  const trainer = await Trainer.findOne({where: {name: "Red"}});
+  console.log(JSON.stringify(trainer));
+
+  const trainerWithPokemon = await Trainer.findOne({
+    where: {name: "Red"},
+    include: Pokemon
   });
+  console.log(JSON.stringify(trainerWithPokemon, null, 2));
 
-  await Pokemon.bulkCreate([
-    {
-      name: "Bulbasaur",
-      type: "Grass/Poison",
-      weight: 6.9,
-    },
-    {
-      name: "Charmander",
-      type: "Fire",
-      weight: 8.5,
-    },
-    {
-      name: "Squirtle",
-      type: "Water",
-      weight: 9,
-    },
-  ]);
+  // Many <-> Many relationship
+  await trainers[0].addBadge(badges[0]);
+  await trainers[1].addBadge(badges[0]);
+  await trainers[1].addBadge(badges[1]);
 
-  //READ
-  const currentPokemon = await Pokemon.findByPk(3);
-  const allPokemon = await Pokemon.findAll();
-
-  // UPDATE
-  const updateResult = await Pokemon.update(
-    { name: "Ivysaur", weight: 13 },
-    { where: { name: "Bulbasaur" } }
-  );
-
-  //DELETE
-  const deleteResult = await Pokemon.destroy({ where: { name: "Squirtle" } });
-
-  console.log(JSON.stringify(deleteResult, null, 2));
+  console.log("----- TESTING MANY TO MANY EAGER LOADING -----")
+  const trainersWithBadges = await Trainer.findAll({include: Badge});
+  console.log(JSON.stringify(trainersWithBadges, null, 2));
 }
 
 main();
